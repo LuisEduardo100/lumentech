@@ -1,0 +1,43 @@
+
+# General
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Backend (Elixir/Phoenix)
+backend/_build/
+backend/deps/
+backend/.env
+backend/.env.*
+backend/*.rock
+backend/erl_crash.dump
+backend/priv/static/assets/
+backend/priv/static/cache_manifest.json
+backend/priv/static/favicon.ico
+backend/priv/static/images/
+backend/priv/static/robots.txt
+backend/cover/
+backend/doc/
+
+# Google Credentials (Backend)
+backend/lumentech-dados-*.json
+backend/credentials.json
+
+# Frontend (Node/React)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# OS
+dist/
+node_modules/
