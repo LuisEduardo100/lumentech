@@ -34,21 +34,14 @@ defmodule LumentechMonitor.DataIngestion.SheetWatcher do
 
   @impl true
   def handle_info(:tick, state) do
-    # Schedule next tick first to ensure distinct intervals
-    Process.send_after(self(), :tick, @interval)
-
-    # Fetch asynchronously to avoid blocking the GenServer (which causes timeouts in get_data)
+    # Fetch asynchronously
     parent = self()
 
     Task.start(fn ->
       try do
-        case LumentechMonitor.DataIngestion.SheetClient.fetch() do
-          {:ok, data} ->
-            send(parent, {:fetch_result, {:ok, data}})
-
-          error ->
-            send(parent, {:fetch_result, error})
-        end
+        last_time = Map.get(state, :file_modified_time)
+        result = LumentechMonitor.DataIngestion.SheetClient.fetch(last_time)
+        send(parent, {:fetch_result, result})
       rescue
         e ->
           Logger.error("Crash during async fetch: #{inspect(e)}")
@@ -61,20 +54,53 @@ defmodule LumentechMonitor.DataIngestion.SheetWatcher do
 
   # Handle the async result
   def handle_info({:fetch_result, result}, state) do
-    case result do
-      {:ok, data} ->
-        check_and_broadcast(state, data)
-        {:noreply, data}
+    {new_state, next_interval} =
+      case result do
+        # Data Changed - Update State & Time
+        {:ok, data, modified_time} ->
+          check_and_broadcast(state, data)
 
-      {:error, reason} ->
-        Logger.error("Failed to fetch sheet data (async): #{inspect(reason)}")
-        {:noreply, state}
-    end
+          updated_state =
+            state
+            |> Map.merge(data)
+            |> Map.put(:file_modified_time, modified_time)
+
+          # Only speed up if we have a valid modified_time (Optimization working)
+          # If modified_time is nil, we fell back. Don't speed up to avoid rate limit.
+          next_int =
+            if modified_time do
+              max(5_000, Map.get(state, :current_interval, @interval) - 1_000)
+            else
+              Map.get(state, :current_interval, @interval)
+            end
+
+          {updated_state, next_int}
+
+        # Data Unchanged - Just Update Time & Poll
+        {:ok, :unchanged, modified_time} ->
+          next_int = max(5_000, Map.get(state, :current_interval, @interval))
+          {Map.put(state, :file_modified_time, modified_time), next_int}
+
+        {:ok, check_mock_data} ->
+          check_and_broadcast(state, check_mock_data)
+          {Map.merge(state, check_mock_data), 10_000}
+
+        {:error, "Sheet API Error: 429" <> _} ->
+          Logger.warning("Rate limit hit. Backing off.")
+          next_int = min(60_000, Map.get(state, :current_interval, @interval) * 2)
+          {state, next_int}
+
+        {:error, _} ->
+          {state, Map.get(state, :current_interval, @interval)}
+      end
+
+    Process.send_after(self(), :tick, next_interval)
+    {:noreply, Map.put(new_state, :current_interval, next_interval)}
   end
 
   defp check_and_broadcast(old_state, new_state) do
-    # Simple comparison. In a real app, might want to compare specific fields or a hash.
-    if old_state.rows != new_state.rows do
+    # Simple comparison
+    if Map.get(old_state, :rows) != Map.get(new_state, :rows) do
       Logger.info("Data changed. Broadcasting to #{@topic}")
       Phoenix.PubSub.broadcast(LumentechMonitor.PubSub, @topic, {:new_data, new_state})
     else

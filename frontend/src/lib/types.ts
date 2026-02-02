@@ -1,5 +1,6 @@
 export interface SheetRow {
-    id: string; // "P-TESTE123"
+    id: string; // Composite ID "PEDIDO-PRODUTO"
+    pedido_original?: string; // Original ID "PEDIDO" for display
     cliente: string;
     profissional: string;
     status: string; // "Em andamento" | "Ganho" | "Perdido"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDashboardChannel } from './hooks/useDashboardChannel';
 import { calculateMetrics } from './lib/dashboardLogic';
 import { KPICard } from './components/KPICard';
@@ -6,6 +6,9 @@ import { MapChart } from './components/charts/MapChart';
 import { Wifi, WifiOff, Moon, Sun, LayoutGrid, List } from 'lucide-react';
 import { CreateOrderModal } from './components/CreateOrderModal';
 import { DealsView } from './views/DealsView';
+import { SheetRow } from './lib/types';
+import { EditOrderModal } from './components/EditOrderModal';
+import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 
 function App() {
     const { data, isConnected, push, manualUpdate } = useDashboardChannel();
@@ -17,6 +20,13 @@ function App() {
     const [selectedState, setSelectedState] = useState<string | null>(null);
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // Edit/Delete State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingRow, setEditingRow] = useState<SheetRow | null>(null);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingRow, setDeletingRow] = useState<SheetRow | null>(null);
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
@@ -62,13 +72,19 @@ function App() {
         // orderData is { row: [...] }
         const r = orderData.row;
         // Optimistic Update
+        const safePedido = String(orderData.row[0] || '').trim();
+        const safeProduto = String(orderData.row[5] || '').trim();
+        const compositeId = safeProduto ? `${safePedido}-${safeProduto}` : safePedido;
+
         const newRow = {
-            id: r[0], data_emissao: r[1], cliente: r[2], categoria: r[3], origem: r[4],
+            id: compositeId,
+            pedido_original: safePedido,
+            data_emissao: r[1], cliente: r[2], categoria: r[3], origem: r[4],
             produto: r[5], valor: parseFloat(r[6].replace(/\./g, '').replace(',', '.')),
             status: r[7], data_fechamento: r[8], cidade: r[9], estado: r[10], profissional: "N/A"
         };
 
-        manualUpdate(prev => ({ ...prev, rows: [newRow, ...prev.rows] }));
+        manualUpdate(prev => ({ ...prev, rows: [...prev.rows, newRow] }));
 
         try {
             await push("add_order", orderData);
@@ -95,63 +111,102 @@ function App() {
         }
     };
 
+    const handleUpdateRow = async (id: string, updatedMap: any) => {
+        // Optimistic Update
+        manualUpdate(prev => ({
+            ...prev,
+            rows: prev.rows.map(r => r.id === id ? { ...r, ...updatedMap } : r)
+        }));
+
+        try {
+            await push("update_row", { id, row: updatedMap });
+        } catch (e) {
+            console.error("Failed to update row", e);
+            alert("Erro ao atualizar e salvar.");
+        }
+    };
+
+    const handleDeleteRow = async () => {
+        if (!deletingRow) return;
+        const id = deletingRow.id;
+
+        // Optimistic Delete
+        manualUpdate(prev => ({
+            ...prev,
+            rows: prev.rows.filter(r => r.id !== id)
+        }));
+
+        try {
+            await push("delete_row", { id });
+        } catch (e) {
+            console.error("Failed to delete row", e);
+            alert("Erro ao excluir. Tente novamente.");
+        }
+    };
+
     return (
         <div className={`h-screen w-full flex flex-col overflow-hidden font-sans transition-colors duration-500 ${bgColor} ${textColor}`}>
 
             {/* Header */}
-            <header className={`px-8 py-4 flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'} border-b shadow-sm transition-colors duration-300`}>
-                <div className="flex items-center gap-8">
-                    <h1 className="text-2xl font-black tracking-tighter uppercase italic">
-                        <span className="text-[#f75900]">Lumen</span>tech
-                    </h1>
+            <header className={`px-4 sm:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shrink-0 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'} border-b shadow-sm transition-colors duration-300`}>
 
-                    {/* View Switcher */}
-                    <div className={`flex items-center p-1 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-                        <button
-                            onClick={() => setView('dashboard')}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${view === 'dashboard' ? (isDark ? 'bg-slate-700 text-white shadow' : 'bg-white text-slate-800 shadow') : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            <LayoutGrid className="w-4 h-4" />
-                            DASHBOARD
-                        </button>
-                        <button
-                            onClick={() => setView('deals')}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${view === 'deals' ? (isDark ? 'bg-slate-700 text-white shadow' : 'bg-white text-slate-800 shadow') : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            <List className="w-4 h-4" />
-                            NEGÓCIOS
-                        </button>
-                    </div>
+                {/* Left Section: Logo + Navigation Controls */}
+                <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto">
 
-                    {/* Category Tabs (Only show in Dashboard view) */}
-                    {view === 'dashboard' && (
-                        <div className={`hidden md:flex p-1 rounded-lg transition-colors ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    {/* Logo - Increased Size */}
+                    <img src="/images/lumentech_logo.png" alt="Lumentech" className="h-16 md:h-20 w-auto object-contain" />
+
+                    {/* Navigation - Separate Groups */}
+                    <div className="flex items-center gap-4">
+                        {/* View Switcher */}
+                        <div className={`flex items-center p-1 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
                             <button
-                                onClick={() => { setCategory('Geral'); setSelectedState(null); }}
-                                className={`px-6 py-1.5 rounded-md text-sm font-bold transition-all ${category === 'Geral' ? (isDark ? 'bg-slate-600 text-white shadow-md' : 'bg-slate-600 text-white shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                                onClick={() => setView('dashboard')}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${view === 'dashboard' ? (isDark ? 'bg-slate-700 text-white shadow' : 'bg-white text-slate-800 shadow') : 'text-slate-500 hover:text-slate-700'}`}
                             >
-                                GERAL
+                                <LayoutGrid className="w-4 h-4" />
+                                <span className="hidden sm:inline">DASHBOARD</span>
                             </button>
                             <button
-                                onClick={() => { setCategory('Orglight'); setSelectedState(null); }}
-                                className={`px-6 py-1.5 rounded-md text-sm font-bold transition-all ${category === 'Orglight' ? 'bg-[#f75900] text-white shadow-md' : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                                onClick={() => setView('deals')}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${view === 'deals' ? (isDark ? 'bg-slate-700 text-white shadow' : 'bg-white text-slate-800 shadow') : 'text-slate-500 hover:text-slate-700'}`}
                             >
-                                ORGLIGHT
-                            </button>
-                            <button
-                                onClick={() => { setCategory('Perfil'); setSelectedState(null); }}
-                                className={`px-6 py-1.5 rounded-md text-sm font-bold transition-all ${category === 'Perfil' ? (isDark ? 'bg-slate-700 text-white shadow-md' : 'bg-black text-white shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                            >
-                                PERFIL
+                                <List className="w-4 h-4" />
+                                <span className="hidden sm:inline">NEGÓCIOS</span>
                             </button>
                         </div>
-                    )}
+
+                        {/* Category Tabs (Only in Dashboard) */}
+                        {view === 'dashboard' && (
+                            <div className={`flex items-center p-1 rounded-lg border transition-colors ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <button
+                                    onClick={() => { setCategory('Geral'); setSelectedState(null); }}
+                                    className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-all ${category === 'Geral' ? (isDark ? 'bg-slate-600 text-white shadow-md' : 'bg-slate-600 text-white shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                                >
+                                    GERAL
+                                </button>
+                                <button
+                                    onClick={() => { setCategory('Orglight'); setSelectedState(null); }}
+                                    className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-all ${category === 'Orglight' ? 'bg-[#f75900] text-white shadow-md' : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                                >
+                                    ORGLIGHT
+                                </button>
+                                <button
+                                    onClick={() => { setCategory('Perfil'); setSelectedState(null); }}
+                                    className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-all ${category === 'Perfil' ? (isDark ? 'bg-slate-700 text-white shadow-md' : 'bg-black text-white shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                                >
+                                    PERFIL
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
+                {/* Right Section: System Status & Tools */}
                 <div className="flex items-center gap-6">
                     {/* State Filter Indicator */}
                     {selectedState && view === 'dashboard' && (
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border animate-in fade-in slide-in-from-top-2 ${isDark ? 'bg-[#f75900]/20 border-[#f75900]/30 text-orange-100' : 'bg-[#f75900]/10 text-[#f75900] border-[#f75900]/20'}`}>
+                        <div className={`hidden md:flex items-center gap-2 px-3 py-1 rounded-full border animate-in fade-in slide-in-from-top-2 ${isDark ? 'bg-[#f75900]/20 border-[#f75900]/30 text-orange-100' : 'bg-[#f75900]/10 text-[#f75900] border-[#f75900]/20'}`}>
                             <span className="text-xs font-bold">FILTRO: {selectedState}</span>
                             <button onClick={() => setSelectedState(null)} className={`rounded-full p-0.5 ${isDark ? 'hover:bg-[#f75900]/30' : 'hover:bg-[#f75900]/20'}`}>
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -159,7 +214,7 @@ function App() {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-4 border-l border-slate-700/10 pl-6">
+                    <div className="flex items-center gap-4 border-l border-slate-200 dark:border-slate-800 pl-6 h-8">
                         {/* Theme Toggle */}
                         <button onClick={() => setThemeMode(isDark ? 'light' : 'dark')} className={`p-2 rounded-full transition ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
                             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -174,7 +229,7 @@ function App() {
                         </div>
 
                         {/* Clock */}
-                        <div className={`text-xl font-mono font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} opacity-90`}>
+                        <div className={`hidden sm:block text-xl font-mono font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} opacity-90`}>
                             {time.toLocaleTimeString()}
                         </div>
                     </div>
@@ -233,6 +288,8 @@ function App() {
                         rows={data.rows}
                         onUpdateStatus={handleUpdateStatus}
                         onOpenCreateModal={() => setIsCreateModalOpen(true)}
+                        onEditRow={(row) => { setEditingRow(row); setIsEditModalOpen(true); }}
+                        onDeleteRow={(row) => { setDeletingRow(row); setIsDeleteModalOpen(true); }}
                         isDark={isDark}
                     />
                 )}
@@ -243,6 +300,23 @@ function App() {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onSubmit={handleCreateOrder}
+                rows={data.rows}
+                isDark={isDark}
+            />
+
+            <EditOrderModal
+                isOpen={isEditModalOpen}
+                onClose={() => { setIsEditModalOpen(false); setEditingRow(null); }}
+                onSubmit={handleUpdateRow}
+                initialData={editingRow}
+                isDark={isDark}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => { setIsDeleteModalOpen(false); setDeletingRow(null); }}
+                onConfirm={handleDeleteRow}
+                itemName={deletingRow ? `Pedido #${deletingRow.pedido_original || deletingRow.id}` : ''}
                 isDark={isDark}
             />
         </div>

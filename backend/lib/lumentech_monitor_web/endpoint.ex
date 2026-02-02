@@ -6,14 +6,12 @@ defmodule LumentechMonitorWeb.Endpoint do
   # Set :encryption_salt if you would also like to encrypt it.
 
   socket("/socket", LumentechMonitorWeb.UserSocket,
-    websocket: true,
+    websocket: [
+      check_origin: false
+    ],
     longpoll: false
   )
 
-  # Serve at "/" the static files from "priv/static" directory.
-  #
-  # You should set gzip to true if you are running phx.digest
-  # when deploying your static files in production.
   plug(Plug.Static,
     at: "/",
     from: :lumentech_monitor,
@@ -36,7 +34,14 @@ defmodule LumentechMonitorWeb.Endpoint do
     json_decoder: Phoenix.json_library()
   )
 
-  plug(CORSPlug, origin: ["http://localhost:5173"])
+  plug(CORSPlug,
+    origin: [
+      "https://syslumen.aled1.com",
+      "//syslumen.aled1.com",
+      "http://localhost:5173",
+      "http://localhost:4000"
+    ]
+  )
 
   plug(LumentechMonitorWeb.Router)
 end

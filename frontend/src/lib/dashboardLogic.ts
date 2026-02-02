@@ -28,8 +28,8 @@ export function calculateMetrics(rows: SheetRow[]): DashboardMetrics {
         month: trySum(fechadoRows, r => isSameMonth(parseBrDate(r.data_fechamento), now))
     };
 
-    // Volume Orçado: Status == "Em andamento" OR "Ganho"
-    const orcadoRows = rows.filter(r => isEmAndamento(r.status) || isGanho(r.status));
+    // Volume Orçado: Anything NOT "Ganho" and NOT "Perdido"
+    const orcadoRows = rows.filter(r => !isGanho(r.status) && r.status?.toUpperCase() !== "PERDIDO");
 
     const volumeOrcado = {
         total: sum(orcadoRows),

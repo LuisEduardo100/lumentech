@@ -26,7 +26,7 @@ defmodule LumentechMonitor.MixProject do
       {:plug_cowboy, "~> 2.6"},
       {:jason, "~> 1.4"},
       {:cors_plug, "~> 3.0"},
-      {:goth, "~> 1.4"},
+      {:goth, "~> 1.4", override: true},
       {:google_api_sheets, "~> 0.34"},
       {:dotenvy, "~> 0.8"},
       {:finch, "~> 0.19"}

@@ -10,10 +10,14 @@ defmodule LumentechMonitor.Application do
           {Phoenix.PubSub, name: LumentechMonitor.PubSub},
           # Start the Endpoint (http/https)
           LumentechMonitorWeb.Endpoint,
-          # Start the Data Ingestion GenServer
-          LumentechMonitor.DataIngestion.SheetWatcher,
           # Start Finch for HTTP requests
-          {Finch, name: LumentechMonitor.Finch}
+          {Finch, name: LumentechMonitor.Finch},
+
+          # Data Ingestion (Cache-Aside)
+          LumentechMonitor.Data.DealStore
+
+          # Deprecated: LumentechMonitor.DataIngestion.SheetWatcher (Removed/Commented)
+          # LumentechMonitor.DataIngestion.SheetWatcher
         ]
 
     opts = [strategy: :one_for_one, name: LumentechMonitor.Supervisor]

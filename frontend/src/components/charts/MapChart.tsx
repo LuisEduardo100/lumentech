@@ -16,13 +16,18 @@ export function MapChart({ data, themeColor, showPercentage = true, onStateClick
     const [geoJson, setGeoJson] = useState<any>(null);
 
     useEffect(() => {
+        let isMounted = true;
         fetch(GEOJSON_URL)
             .then(r => r.json())
             .then(json => {
-                echarts.registerMap('Brazil', json);
-                setGeoJson(json);
+                if (isMounted) {
+                    echarts.registerMap('Brazil', json);
+                    setGeoJson(json);
+                }
             })
             .catch(err => console.error("Failed to load map", err));
+
+        return () => { isMounted = false; };
     }, []);
 
     if (!geoJson) return <div className="h-full flex items-center justify-center text-xs text-slate-400">Loading Map...</div>;
@@ -110,6 +115,8 @@ export function MapChart({ data, themeColor, showPercentage = true, onStateClick
         onEvents={{
             'click': onChartClick
         }}
+        notMerge={true}
+        lazyUpdate={true}
     />;
 }
 

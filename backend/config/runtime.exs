@@ -15,6 +15,14 @@ if System.get_env("PHX_SERVER") do
   config :lumentech_monitor, LumentechMonitorWeb.Endpoint, server: true
 end
 
+if config_env() == :prod do
+  config :lumentech_monitor, LumentechMonitorWeb.Endpoint,
+    http: [
+      port: String.to_integer(System.get_env("PORT") || "4000"),
+      transport_options: [socket_opts: [:inet6]]
+    ]
+end
+
 # Google Sheets Configuration
 # Handle potential quoting issues in environment variables
 clean_creds = fn

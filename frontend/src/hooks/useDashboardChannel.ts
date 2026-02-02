@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { Socket } from 'phoenix';
 import { SheetData } from '../lib/types';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'ws://localhost:4000/socket';
+const isProd = import.meta.env.PROD;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+// No VPS, o protocolo deve ser wss (seguro) e o caminho deve incluir o /api que o Traefik gerencia
+const SOCKET_URL = isProd
+    ? `wss://${window.location.host}/socket`
+    : `${API_URL.replace('http', 'ws')}/socket`;
 
 export function useDashboardChannel() {
     const [data, setData] = useState<SheetData>({ rows: [], last_updated: null });
@@ -29,6 +35,12 @@ export function useDashboardChannel() {
 
         chan.on("new_data", (payload: SheetData) => {
             console.log("New data received", payload);
+            setData(payload);
+        });
+
+        // User requested event name
+        chan.on("update_deals", (payload: SheetData) => {
+            console.log("Update deals received", payload);
             setData(payload);
         });
 

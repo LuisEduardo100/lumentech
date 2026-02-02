@@ -1,35 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { Toast } from './Toast';
 import { SheetRow } from '../lib/types';
 
-interface CreateOrderModalProps {
+interface EditOrderModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: any) => Promise<void>;
-    rows: SheetRow[];
+    onSubmit: (id: string, data: any) => Promise<void>;
+    initialData: SheetRow | null;
     isDark?: boolean;
 }
 
-export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: CreateOrderModalProps) {
+export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark }: EditOrderModalProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [toast, setToast] = useState<{ message: string; description?: string; type: 'error' | 'success'; visible: boolean } | null>(null);
-
     const [formData, setFormData] = useState({
         id: '',
-        data_emissao: new Date().toLocaleDateString('pt-BR'), // Default today
+        data_emissao: '',
         cliente: '',
-        categoria: 'ILUMINAÇÃO TÉCNICA', // Default
+        categoria: '',
         origem: '',
         produto: '',
         valor: '',
-        status: 'Em andamento',
+        status: '',
         data_fechamento: '',
         cidade: '',
         estado: ''
     });
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        if (initialData) {
+            // Format valor back to string with comma if it's a number?
+            // The SheetRow stores formatted string or number. Backend `update_row` expects string/number.
+            // Typically form inputs use string "1.234,56".
+            // SheetRow.valor is number. Convert to PT-BR string for input.
+            const valorStr = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(initialData.valor);
+
+            setFormData({
+                id: initialData.id,
+                data_emissao: initialData.data_emissao,
+                cliente: initialData.cliente,
+                categoria: initialData.categoria,
+                origem: initialData.origem,
+                produto: initialData.produto,
+                valor: valorStr,
+                status: initialData.status,
+                data_fechamento: initialData.data_fechamento || '',
+                cidade: initialData.cidade,
+                estado: initialData.estado
+            });
+        }
+    }, [initialData]);
+
+    if (!isOpen || !initialData) return null;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -48,56 +69,28 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // DUPLICATE CHECK
-        // Replicate Backend Logic: #{safe_pedido}-#{safe_produto}
-        const safePedido = formData.id.trim();
-        const safeProduto = formData.produto.trim();
-        // Generate composite ID for checking
-        const compositeIdCheck = safeProduto ? `${safePedido}-${safeProduto}` : safePedido;
-        const normalizedCheck = compositeIdCheck.toLowerCase();
-
-        // Check against existing rows (case insensitive)
-        const exists = rows.some(r => r.id.toLowerCase() === normalizedCheck);
-
-        if (exists) {
-            setToast({
-                message: "Pedido Duplicado Detectado",
-                description: `Já existe um registro com o Pedido "${safePedido}" e Produto "${safeProduto}". Para corrigir, verifique se o número do pedido está correto ou adicione um detalhe diferente na descrição do produto (ex: "Lote 2").`,
-                type: 'error',
-                visible: true
-            });
-            return;
-        }
-
         setIsLoading(true);
         try {
-            // Prepare payload matching A-K
-            const row = [
-                formData.id,
-                formData.data_emissao,
-                formData.cliente,
-                formData.categoria,
-                formData.origem,
-                formData.produto,
-                formData.valor,
-                formData.status,
-                formData.data_fechamento,
-                formData.cidade,
-                formData.estado
-            ];
+            // map back to backend format
+            const rowMap = {
+                id: formData.id,
+                data_emissao: formData.data_emissao,
+                cliente: formData.cliente,
+                categoria: formData.categoria,
+                origem: formData.origem,
+                produto: formData.produto,
+                valor: formData.valor,
+                status: formData.status,
+                data_fechamento: formData.data_fechamento,
+                cidade: formData.cidade,
+                estado: formData.estado
+            };
 
-            await onSubmit({ row });
+            await onSubmit(initialData.id, rowMap);
             onClose();
-            // Reset form
-            setFormData({
-                id: '', data_emissao: new Date().toLocaleDateString('pt-BR'), cliente: '', categoria: 'ILUMINAÇÃO TÉCNICA',
-                origem: '', produto: '', valor: '', status: 'Em andamento', data_fechamento: '', cidade: '', estado: ''
-            });
-            setToast(null);
         } catch (error) {
-            console.error("Error creating order:", error);
-            alert("Erro ao criar pedido. Tente novamente.");
+            console.error("Error updating order:", error);
+            alert("Erro ao atualizar pedido. Tente novamente.");
         } finally {
             setIsLoading(false);
         }
@@ -108,19 +101,10 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            {toast && toast.visible && (
-                <Toast
-                    message={toast.message}
-                    description={toast.description}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
-
             <div className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                 {/* Header */}
                 <div className={`px-6 py-4 flex justify-between items-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Cadastrar Novo Pedido</h2>
+                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Editar Pedido #{initialData.id}</h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100/10 text-slate-400 hover:text-red-500 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
@@ -130,7 +114,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Nº Pedido *</label>
-                        <input name="id" required value={formData.id} onChange={handleChange} className={inputClass} placeholder="Ex: 12345" />
+                        <input name="id" readOnly disabled value={formData.id} className={`${inputClass} opacity-50 cursor-not-allowed`} />
                     </div>
                     <div>
                         <label className={labelClass}>Data Emissão *</label>
@@ -139,7 +123,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
 
                     <div className="col-span-2">
                         <label className={labelClass}>Cliente *</label>
-                        <input name="cliente" required value={formData.cliente} onChange={handleChange} className={inputClass} placeholder="Nome do Cliente" />
+                        <input name="cliente" required value={formData.cliente} onChange={handleChange} className={inputClass} />
                     </div>
 
                     <div>
@@ -162,7 +146,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
 
                     <div>
                         <label className={labelClass}>Valor (R$) *</label>
-                        <input name="valor" required value={formData.valor} onChange={handleChange} className={inputClass} placeholder="0,00" />
+                        <input name="valor" required value={formData.valor} onChange={handleChange} className={inputClass} />
                     </div>
                     <div>
                         <label className={labelClass}>Status *</label>
@@ -197,7 +181,7 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
                             className="bg-[#f75900] hover:bg-[#d94e00] text-white px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 disabled:opacity-50"
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {isLoading ? 'Salvando...' : 'CADASTRAR'}
+                            {isLoading ? 'Salvando...' : 'SALVAR ALTERAÇÕES'}
                         </button>
                     </div>
                 </form>

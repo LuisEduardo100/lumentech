@@ -1,26 +1,71 @@
 defmodule LumentechMonitor.DataIngestion.SheetClient do
   require Logger
 
-  def fetch do
+  def fetch(last_known_modified_time \\ nil) do
     spreadsheet_id = Application.get_env(:lumentech_monitor, :data_ingestion)[:spreadsheet_id]
 
     if is_nil(spreadsheet_id) do
-      Logger.info("SPREADSHEET_ID missing. Using Mock Data.")
-      {:ok, generate_mock_data()}
+      Logger.info("SPREADSHEET_ID is missing in config. Using Mock Data.")
+      {:ok, generate_mock_data(), nil}
     else
+      # 1. Check metadata (Optimization)
       case get_auth_header() do
         {:ok, auth_header} ->
-          url = "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/A2:K"
+          case check_modified(spreadsheet_id, auth_header, last_known_modified_time) do
+            {:unchanged, current_time} ->
+              Logger.debug("Sheet unchanged (Time: #{current_time}). Skipping fetch.")
+              {:ok, :unchanged, current_time}
 
-          Finch.build(:get, url, [auth_header])
-          |> Finch.request(LumentechMonitor.Finch)
-          |> handle_fetch_response()
+            {:changed, current_time} ->
+              Logger.info("Sheet changed/Stale. Fetching Values...")
+              fetch_values(spreadsheet_id, auth_header, current_time)
 
-        {:error, reason} ->
-          Logger.error("Fetch failed: #{inspect(reason)}")
-          {:error, reason}
+            {:error, reason} ->
+              Logger.warn("Metadata check failed (#{inspect(reason)}). Fallback to full fetch.")
+              fetch_values(spreadsheet_id, auth_header, nil)
+          end
+
+        error ->
+          error
       end
     end
+  end
+
+  defp check_modified(spreadsheet_id, auth_header, last_known) do
+    url = "https://www.googleapis.com/drive/v3/files/#{spreadsheet_id}?fields=modifiedTime"
+
+    Finch.build(:get, url, [auth_header])
+    |> Finch.request(LumentechMonitor.Finch)
+    |> case do
+      {:ok, %Finch.Response{status: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"modifiedTime" => current_time}} ->
+            if last_known == current_time do
+              {:unchanged, current_time}
+            else
+              {:changed, current_time}
+            end
+
+          _ ->
+            {:error, :json_decode_error}
+        end
+
+      # If 403/404, might be scope issue or invalid ID
+      {:ok, resp} ->
+        {:error, "Drive API Error: #{resp.status}"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp fetch_values(spreadsheet_id, auth_header, current_time) do
+    Logger.info("Fetching from Spreadsheet ID: #{String.slice(spreadsheet_id, 0, 5)}...")
+    url = "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/A2:K"
+
+    Finch.build(:get, url, [auth_header])
+    |> Finch.request(LumentechMonitor.Finch)
+    |> handle_fetch_response(current_time)
   end
 
   def append_row(row_data) do
@@ -31,7 +76,7 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
     # [id, emission, client, category, origin, product, value, status, closing, city, state]
 
     url =
-      "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/A1:append?valueInputOption=USER_ENTERED"
+      "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS"
 
     body = %{
       "values" => [row_data]
@@ -57,39 +102,40 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
     end
   end
 
-  def update_status(id, new_status) do
+  def update_row(id, new_row_map) do
     spreadsheet_id = Application.get_env(:lumentech_monitor, :data_ingestion)[:spreadsheet_id]
     if is_nil(spreadsheet_id), do: {:error, :spreadsheet_id_missing}
 
-    # 1. Fetch current data to find the row index of the ID
     case fetch_raw_values() do
       {:ok, rows} ->
-        # Find index. Rows[0] is header usually, but we check all.
-        # Column A is ID (index 0).
-        # We fetch from A2:K, so the first row in `rows` corresponds to row 2 in the sheet.
         index = Enum.find_index(rows, fn r -> Enum.at(r, 0) == id end)
 
         if index do
-          # Sheet rows are 1-based.
-          # If rows included header, index 0 is Row 1.
-          # Adjust based on header presence. Assuming Header is Row 1.
-          # API result usually "values" array.
-          # If we used Range 'A:K', index 0 is Row 1.
-          # So Row Number = index + 1.
-          # Since we fetch from A2, the first element of `rows` is sheet row 2.
-          # So, sheet_row_number = index_in_list + 2
+          # Row index is 1-based (and usually header is 1).
+          # Raw values start from A2 (index 0). So Sheet Row = index + 2.
           sheet_row_number = index + 2
+          range = "A#{sheet_row_number}:K#{sheet_row_number}"
 
-          # Status column is Column H (8th letter).
-          # Range: H{RowNumber}
-          range = "H#{sheet_row_number}"
+          # Construct row list from map
+          row_values = [
+            new_row_map["id"],
+            new_row_map["data_emissao"],
+            new_row_map["cliente"],
+            new_row_map["categoria"],
+            new_row_map["origem"],
+            new_row_map["produto"],
+            # Should be string or number? Sheets handles both.
+            new_row_map["valor"],
+            new_row_map["status"],
+            new_row_map["data_fechamento"],
+            new_row_map["cidade"],
+            new_row_map["estado"]
+          ]
 
           url =
             "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/#{range}?valueInputOption=USER_ENTERED"
 
-          body = %{
-            "values" => [[new_status]]
-          }
+          body = %{"values" => [row_values]}
 
           case get_auth_header() do
             {:ok, auth_header} ->
@@ -102,7 +148,103 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
               |> Finch.request(LumentechMonitor.Finch)
               |> case do
                 {:ok, %Finch.Response{status: 200}} -> {:ok, :updated}
-                {:ok, response} -> {:error, "Update Failed: #{inspect(response.body)}"}
+                {:ok, resp} -> {:error, "Update Failed: #{inspect(resp.body)}"}
+                {:error, reason} -> {:error, reason}
+              end
+
+            error ->
+              error
+          end
+        else
+          {:error, :not_found}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def delete_row(id) do
+    spreadsheet_id = Application.get_env(:lumentech_monitor, :data_ingestion)[:spreadsheet_id]
+    if is_nil(spreadsheet_id), do: {:error, :spreadsheet_id_missing}
+
+    # To delete a row physically, we need batchUpdate request with deleteDimension.
+    # We need the SHEET ID (gid), not just spreadsheet_id.
+    # Assuming first sheet (gid=0) unless specified?
+    # Usually easier to just clear content, but user might want physical deletion.
+    # User said "excluir aquele item".
+    # Let's try physical deletion using deleteDimension.
+
+    case fetch_raw_values() do
+      {:ok, rows} ->
+        # Parse Composite ID (Pedido-Produto) or Pedido
+        {target_pedido, target_produto} =
+          if String.contains?(id, "-") do
+            parts = String.split(to_string(id), "-", parts: 2)
+            {Enum.at(parts, 0) |> String.trim(), Enum.at(parts, 1) |> String.trim()}
+          else
+            {to_string(id) |> String.trim(), nil}
+          end
+
+        index =
+          Enum.find_index(rows, fn r ->
+            # Row mapping: 0=Pedido, 5=Produto
+            row_pedido = to_string(Enum.at(r, 0) || "") |> String.trim()
+            row_produto = to_string(Enum.at(r, 5) || "") |> String.trim()
+
+            if target_produto do
+              # Match both
+              String.downcase(row_pedido) == String.downcase(target_pedido) &&
+                String.downcase(row_produto) == String.downcase(target_produto)
+            else
+              # Fallback: Match only Pedido if no composite provided (risky for duplicates but maintains compat)
+              String.downcase(row_pedido) == String.downcase(target_pedido)
+            end
+          end)
+
+        if index do
+          # Sheet Row Index (0-based) for deleteDimension.
+          # Header is row 0. Data from A2 is row 1+
+          # Rows fetched from A2. Index 0 of `rows` refers to A2, which is physical row index 1 in 0-based API.
+          # Wait, data starts at A2.
+          # Row 0 = Header
+          # Row 1 = Data 1
+          # If index found is 0 (first data item), it corresponds to physical index 1.
+
+          sheet_row_index = index + 1
+          start_index = sheet_row_index
+          end_index = start_index + 1
+
+          url = "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}:batchUpdate"
+
+          body = %{
+            "requests" => [
+              %{
+                "deleteDimension" => %{
+                  "range" => %{
+                    # Assuming first sheet! Risk if customized.
+                    "sheetId" => 0,
+                    "dimension" => "ROWS",
+                    "startIndex" => start_index,
+                    "endIndex" => end_index
+                  }
+                }
+              }
+            ]
+          }
+
+          case get_auth_header() do
+            {:ok, auth_header} ->
+              Finch.build(
+                :post,
+                url,
+                [auth_header, {"Content-Type", "application/json"}],
+                Jason.encode!(body)
+              )
+              |> Finch.request(LumentechMonitor.Finch)
+              |> case do
+                {:ok, %Finch.Response{status: 200}} -> {:ok, :deleted}
+                {:ok, resp} -> {:error, "Delete Failed: #{inspect(resp.body)}"}
                 {:error, reason} -> {:error, reason}
               end
 
@@ -133,11 +275,20 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
         |> case do
           {:ok, %Finch.Response{status: 200, body: body}} ->
             case Jason.decode(body) do
-              {:ok, %{"values" => values}} -> {:ok, values}
+              {:ok, %{"values" => values}} ->
+                Logger.info("SheetClient: Fetched #{length(values)} raw rows from Sheet.")
+                {:ok, values}
+
               # Sheet is empty
-              {:ok, %{"values" => nil}} -> {:ok, []}
-              {:ok, _} -> {:error, :invalid_response_format}
-              {:error, _} -> {:error, :json_decode_failed}
+              {:ok, %{"values" => nil}} ->
+                Logger.info("SheetClient: Sheet returned 'values' => nil (Empty Sheet)")
+                {:ok, []}
+
+              {:ok, _} ->
+                {:error, :invalid_response_format}
+
+              {:error, _} ->
+                {:error, :json_decode_failed}
             end
 
           {:ok, response} ->
@@ -168,14 +319,16 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
     end
   end
 
-  defp handle_fetch_response({:ok, %Finch.Response{status: 200, body: body}}) do
+  defp handle_fetch_response({:ok, %Finch.Response{status: 200, body: body}}, current_time) do
     case Jason.decode(body) do
       {:ok, %{"values" => values}} when is_list(values) ->
         rows = Enum.map(values, &map_row/1)
-        {:ok, %{last_updated: DateTime.utc_now(), rows: rows}}
+        Logger.info("SheetClient: Successfully mapped #{length(rows)} rows.")
+        {:ok, %{last_updated: DateTime.utc_now(), rows: rows}, current_time}
 
       {:ok, %{"values" => nil}} ->
-        {:ok, %{last_updated: DateTime.utc_now(), rows: []}}
+        Logger.info("SheetClient: Sheet returned 'values' => nil (Empty Sheet)")
+        {:ok, %{last_updated: DateTime.utc_now(), rows: []}, current_time}
 
       error ->
         Logger.error("JSON Decode Error: #{inspect(error)}")
@@ -183,12 +336,12 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
     end
   end
 
-  defp handle_fetch_response({:ok, %Finch.Response{status: status, body: body}}) do
+  defp handle_fetch_response({:ok, %Finch.Response{status: status, body: body}}, _time) do
     Logger.error("Sheet API Error: #{status} - #{inspect(body)}")
     {:error, :api_error}
   end
 
-  defp handle_fetch_response({:error, reason}) do
+  defp handle_fetch_response({:error, reason}, _time) do
     Logger.error("Finch Request Error: #{inspect(reason)}")
     {:error, reason}
   end

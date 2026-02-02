@@ -81,7 +81,8 @@ defmodule LumentechMonitor.GoogleAuth do
           "iat" => iat,
           "exp" => exp,
           "aud" => "https://oauth2.googleapis.com/token",
-          "scope" => "https://www.googleapis.com/auth/spreadsheets"
+          "scope" =>
+            "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly"
         }
 
         # Use the service account source with our custom claims
@@ -89,7 +90,10 @@ defmodule LumentechMonitor.GoogleAuth do
           {:service_account, creds,
            [
              claims: claims,
-             scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+             scopes: [
+               "https://www.googleapis.com/auth/spreadsheets",
+               "https://www.googleapis.com/auth/drive.readonly"
+             ]
            ]}
 
         Goth.Token.fetch(source: source)
