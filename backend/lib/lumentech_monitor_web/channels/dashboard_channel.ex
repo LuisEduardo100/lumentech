@@ -4,14 +4,27 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   alias LumentechMonitor.DataIngestion.SheetClient
 
   def join("dashboard:main", _payload, socket) do
+    require Logger
+    Logger.info("🔵 DashboardChannel: Client joining channel 'dashboard:main'")
+
     # Subscribe to PubSub to receive updates
     Phoenix.PubSub.subscribe(LumentechMonitor.PubSub, "dashboard:main")
+    Logger.info("🔵 DashboardChannel: Subscribed to PubSub topic 'dashboard:main'")
 
     # Send the current state immediately upon joining
     state = DealStore.get_all_deals()
+    Logger.info("🔵 DashboardChannel: Retrieved state from DealStore - #{length(state.rows)} rows")
+    Logger.info("🔵 DashboardChannel: last_updated = #{inspect(state.last_updated)}")
 
     # Convert DateTime to ISO8601 string for JSON serialization
     current_data = serialize_state(state)
+    Logger.info("🔵 DashboardChannel: Serialized data - #{length(current_data.rows)} rows")
+
+    Logger.info(
+      "🔵 DashboardChannel: Sample row (first): #{inspect(Enum.at(current_data.rows, 0))}"
+    )
+
+    Logger.info("🔵 DashboardChannel: Sending join response to client")
 
     {:ok, current_data, socket}
   end

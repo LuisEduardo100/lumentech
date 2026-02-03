@@ -27,6 +27,11 @@ export function useDashboardChannel() {
     const [channel, setChannel] = useState<any>(null);
 
     useEffect(() => {
+        console.log('🟢 [Frontend] Initializing WebSocket connection...');
+        console.log('🟢 [Frontend] SOCKET_URL:', SOCKET_URL);
+        console.log('🟢 [Frontend] isProd:', isProd);
+        console.log('🟢 [Frontend] API_URL:', API_URL);
+
         const socket = new Socket(SOCKET_URL, { params: { token: "123" } });
         socket.connect();
 
@@ -35,31 +40,50 @@ export function useDashboardChannel() {
 
         chan.join()
             .receive("ok", (resp: SheetData) => {
-                console.log("Joined successfully", resp);
+                console.log("🟢 [Frontend] ✅ Joined successfully");
+                console.log("🟢 [Frontend] Response type:", typeof resp);
+                console.log("🟢 [Frontend] Response:", resp);
+                console.log("🟢 [Frontend] Rows count:", resp?.rows?.length || 0);
+                console.log("🟢 [Frontend] First row:", resp?.rows?.[0]);
+                console.log("🟢 [Frontend] last_updated:", resp?.last_updated);
                 setData(resp);
                 setIsConnected(true);
             })
             .receive("error", (resp: any) => {
-                console.log("Unable to join", resp);
+                console.error("🔴 [Frontend] ❌ Unable to join", resp);
                 setIsConnected(false);
             });
 
         chan.on("new_data", (payload: SheetData) => {
-            console.log("New data received", payload);
+            console.log("🟢 [Frontend] 📡 New data received via new_data event");
+            console.log("🟢 [Frontend] Payload:", payload);
+            console.log("🟢 [Frontend] Rows count:", payload?.rows?.length || 0);
             setData(payload);
         });
 
         // User requested event name
         chan.on("update_deals", (payload: SheetData) => {
-            console.log("Update deals received", payload);
+            console.log("🟢 [Frontend] 📡 Update deals received");
+            console.log("🟢 [Frontend] Payload:", payload);
+            console.log("🟢 [Frontend] Rows count:", payload?.rows?.length || 0);
             setData(payload);
         });
 
-        socket.onOpen(() => setIsConnected(true));
-        socket.onClose(() => setIsConnected(false));
-        socket.onError(() => setIsConnected(false));
+        socket.onOpen(() => {
+            console.log('🟢 [Frontend] Socket opened');
+            setIsConnected(true);
+        });
+        socket.onClose(() => {
+            console.error('🔴 [Frontend] Socket closed');
+            setIsConnected(false);
+        });
+        socket.onError(() => {
+            console.error('🔴 [Frontend] Socket error');
+            setIsConnected(false);
+        });
 
         return () => {
+            console.log('🟢 [Frontend] Cleaning up socket connection');
             chan.leave();
             socket.disconnect();
         };
