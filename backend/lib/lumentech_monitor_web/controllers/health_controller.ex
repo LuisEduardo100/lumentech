@@ -1,5 +1,5 @@
 defmodule LumentechMonitorWeb.HealthController do
-  use LumentechMonitorWeb, :controller
+  use Phoenix.Controller, namespace: LumentechMonitorWeb
   alias LumentechMonitor.Data.DealStore
 
   def deals(conn, _params) do
