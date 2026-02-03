@@ -40,6 +40,10 @@ defmodule LumentechMonitor.Data.DealStore do
 
   @impl true
   def handle_call(:get_all, _from, state) do
+    Logger.info(
+      "DealStore: Serving get_all request. Row count: #{length(state.rows)} | PID: #{inspect(self())}"
+    )
+
     {:reply, state, state}
   end
 
