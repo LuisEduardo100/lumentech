@@ -3,12 +3,23 @@ import { Socket } from 'phoenix';
 import { SheetData } from '../lib/types';
 
 const isProd = import.meta.env.PROD;
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL;
 
-// No VPS, o protocolo deve ser wss (seguro) e o caminho deve incluir o /api que o Traefik gerencia
-const SOCKET_URL = isProd
-    ? `wss://${window.location.host}/socket`
-    : `${API_URL.replace('http', 'ws')}/socket`;
+// Determine Socket URL:
+// 1. If VITE_API_URL is defined (e.g. "https://syslumen.aled1.com"), use it (swapping http->ws).
+// 2. Else if Prod, derive from window.location (relative).
+// 3. Else default to localhost:4000.
+const getSocketUrl = () => {
+    if (API_URL) {
+        return `${API_URL.replace(/^http/, 'ws')}/socket`;
+    }
+    if (isProd) {
+        return `wss://${window.location.host}/socket`;
+    }
+    return `ws://localhost:4000/socket`;
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export function useDashboardChannel() {
     const [data, setData] = useState<SheetData>({ rows: [], last_updated: null });
