@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: "https://syslumen.aled1.com"
+    image: syslumen_frontend:latest
+    restart: always
+    networks:
+      - network_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=network_public"
+        - "traefik.http.routers.syslumen-front.rule=Host(`syslumen.aled1.com`)"
+        - "traefik.http.routers.syslumen-front.entrypoints=websecure"
+        - "traefik.http.routers.syslumen-front.tls=true"
+        - "traefik.http.routers.syslumen-front.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.syslumen-front.priority=1"
+        - "traefik.http.services.syslumen-front.loadbalancer.server.port=80"
+
+  backend:
+    build: ./backend
+    image: syslumen_backend:latest
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - network_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=network_public"
+        # PRIORITY 100 = Backend wins for /socket and /api paths
+        - "traefik.http.routers.syslumen-back.rule=Host(`syslumen.aled1.com`) && (PathPrefix(`/socket`) || PathPrefix(`/api`))"
+        - "traefik.http.routers.syslumen-back.entrypoints=websecure"
+        - "traefik.http.routers.syslumen-back.tls=true"
+        - "traefik.http.routers.syslumen-back.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.syslumen-back.priority=100"
+        - "traefik.http.services.syslumen-back.loadbalancer.server.port=4000"
+
+networks:
+  network_public:
+    external: true
+    name: network_public
