@@ -25,6 +25,10 @@ defmodule LumentechMonitor.Data.DealStore do
     GenServer.cast(__MODULE__, {:delete_deal, id})
   end
 
+  def set_rows(rows) do
+    GenServer.cast(__MODULE__, {:set_rows, rows})
+  end
+
   # Initial Load
   @impl true
   def init(_) do
@@ -120,6 +124,13 @@ defmodule LumentechMonitor.Data.DealStore do
 
     broadcast_update(new_rows)
     {:noreply, %{state | rows: new_rows, last_updated: DateTime.utc_now()}}
+  end
+
+  @impl true
+  def handle_cast({:set_rows, rows}, state) do
+    Logger.info("DealStore: Syncing cache with SheetWatcher (#{length(rows)} rows).")
+    broadcast_update(rows)
+    {:noreply, %{state | rows: rows, last_updated: DateTime.utc_now()}}
   end
 
   @impl true

@@ -108,7 +108,12 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
 
     case fetch_raw_values() do
       {:ok, rows} ->
-        index = Enum.find_index(rows, fn r -> Enum.at(r, 0) == id end)
+        index =
+          Enum.find_index(rows, fn r ->
+            row_id = Enum.at(r, 0) |> to_string() |> String.trim()
+            target_id = to_string(id) |> String.trim()
+            row_id == target_id
+          end)
 
         if index do
           # Row index is 1-based (and usually header is 1).

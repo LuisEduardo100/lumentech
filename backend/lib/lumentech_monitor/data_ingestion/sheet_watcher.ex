@@ -101,8 +101,11 @@ defmodule LumentechMonitor.DataIngestion.SheetWatcher do
   defp check_and_broadcast(old_state, new_state) do
     # Simple comparison
     if Map.get(old_state, :rows) != Map.get(new_state, :rows) do
-      Logger.info("Data changed. Broadcasting to #{@topic}")
+      Logger.info("Data changed. Broadcasting to #{@topic} and syncing DealStore.")
       Phoenix.PubSub.broadcast(LumentechMonitor.PubSub, @topic, {:new_data, new_state})
+
+      # Also update cache
+      LumentechMonitor.Data.DealStore.set_rows(Map.get(new_state, :rows))
     else
       Logger.debug("Data unchanged.")
     end
