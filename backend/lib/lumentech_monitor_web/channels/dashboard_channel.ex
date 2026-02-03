@@ -4,9 +4,23 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   alias LumentechMonitor.DataIngestion.SheetClient
 
   def join("dashboard:main", _payload, socket) do
+    # Subscribe to PubSub to receive updates
+    Phoenix.PubSub.subscribe(LumentechMonitor.PubSub, "dashboard:main")
+
     # Send the current state immediately upon joining
-    current_data = DealStore.get_all_deals()
+    state = DealStore.get_all_deals()
+
+    # Convert DateTime to ISO8601 string for JSON serialization
+    current_data = serialize_state(state)
+
     {:ok, current_data, socket}
+  end
+
+  defp serialize_state(%{rows: rows, last_updated: last_updated}) do
+    %{
+      rows: rows,
+      last_updated: if(last_updated, do: DateTime.to_iso8601(last_updated), else: nil)
+    }
   end
 
   # We can also handle incoming messages if needed, but this is mostly read-only for the client
