@@ -74,4 +74,19 @@ defmodule LumentechMonitorWeb.DashboardChannel do
         {:reply, {:error, inspect(reason)}, socket}
     end
   end
+
+  # PubSub Handling
+  def handle_info({:new_data, payload}, socket) do
+    push(socket, "new_data", payload)
+    {:noreply, socket}
+  end
+
+  def handle_info({:update_deals, payload}, socket) do
+    push(socket, "update_deals", payload)
+    {:noreply, socket}
+  end
+
+  def handle_info(_, socket) do
+    {:noreply, socket}
+  end
 end
