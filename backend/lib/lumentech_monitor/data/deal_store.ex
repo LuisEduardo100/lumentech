@@ -134,22 +134,29 @@ defmodule LumentechMonitor.Data.DealStore do
   defp has_value?(val), do: not (is_nil(val) || to_string(val) |> String.trim() == "")
 
   defp broadcast_update(rows) do
-    # Ensure sorting before broadcast
-    sorted_rows = sort_rows(rows)
+    try do
+      # Ensure sorting before broadcast
+      sorted_rows = sort_rows(rows)
 
-    Phoenix.PubSub.broadcast(
-      LumentechMonitor.PubSub,
-      "dashboard:main",
-      {:new_data, %{rows: sorted_rows, last_updated: DateTime.utc_now()}}
-    )
+      Phoenix.PubSub.broadcast(
+        LumentechMonitor.PubSub,
+        "dashboard:main",
+        {:new_data, %{rows: sorted_rows, last_updated: DateTime.utc_now()}}
+      )
 
-    # Also broadcast the specific event requested by User (update_deals)
-    # ensuring compatibility if they change frontend listeners.
-    Phoenix.PubSub.broadcast(
-      LumentechMonitor.PubSub,
-      "dashboard:main",
-      {:update_deals, %{rows: sorted_rows, last_updated: DateTime.utc_now()}}
-    )
+      Phoenix.PubSub.broadcast(
+        LumentechMonitor.PubSub,
+        "dashboard:main",
+        {:update_deals, %{rows: sorted_rows, last_updated: DateTime.utc_now()}}
+      )
+    rescue
+      e ->
+        Logger.error(
+          "DealStore: Error during broadcast (likely sorting or pubsub): #{inspect(e)}"
+        )
+
+        # Don't crash, just log. State update will proceed in caller.
+    end
   end
 
   defp sort_rows(rows) do
@@ -167,9 +174,7 @@ defmodule LumentechMonitor.Data.DealStore do
     )
   end
 
-  defp parse_date(nil), do: :error
-
-  defp parse_date(str) do
+  defp parse_date(str) when is_binary(str) do
     # Try ISO
     case Date.from_iso8601(str) do
       {:ok, d} ->
@@ -186,4 +191,6 @@ defmodule LumentechMonitor.Data.DealStore do
         end
     end
   end
+
+  defp parse_date(_), do: :error
 end
