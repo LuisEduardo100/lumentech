@@ -30,8 +30,15 @@ services:
     build: ./backend
     image: syslumen_backend:latest
     restart: always
-    env_file:
-      - .env
+    # IMPORTANTE: Docker Stack IGNORA env_file!
+    # Por isso definimos as variáveis diretamente aqui:
+    environment:
+      - SPREADSHEET_ID=1cxVv2HmoBHCldY6G0ojeb5bMjsE3Nm144qjI87PHlcw
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account","project_id":"lumentech-dados","private_key_id":"eff58fdd7e997a5aeec53a86f34ad1dec7a106a8","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCokGyRk9xsrMPA\nDREYAyFae2QGJwWTQKmqL319A2d4X4XiLQnQad8u0wVds09Xn4jTO+ls/p6PudjR\n+cv4CL77gv26+Jr5PWnEq3zGWFf6dZlpt8qae3PDsYuUU6gkF9qtwSKFi5edyEds\nnsddm5ilQCzROYgfXrqLwfFqwkR2TnHCKN7tWyCW0kxyubnuwdbXpFMwaCkXzaLK\nStRIBravIm56ikex+uIFYQt2L6T6STSUWRDm53lBHE7j6+4ScJa/WOi5l5rven8i\nZ14GLLguqJOa5o6VLVAFIXdIViRClqzCrpzFj/HVmp0846Aa8MlFlu7bNUPmIoVS\nza0M197rAgMBAAECggEAF37F+0anrJLU2ByaJjAtgnineP9lv2Aoe1Bnm+Nmao4E\npywi7Y9hl0Znkudu5uZAQpKGbKBS8Uf0yP5vUpvEJGIzmU+UqP/z5wCw1s6yjfZn\n/fyAZib7UarE1gBmc911Us8UT5ak+U5UvPb8D/f4/15MwOmq0ms4R58EAPRMvvaM\nSmDjPky49nzyw8emAw+5o9Or2gTuNDdt0aWZL8UYqTOTYtmktT1+67WmrK+KKHm+\nn4f4gRGHp05Pcde3lQ4U3Y/wecbLTlm04GPQryTOw1aCbA20URC0vsIHVyGCfnCu\n2JMagLNsvrBS/8ilEn0U71NIuQNHd+f0ytN8MpMiMQKBgQDlz4T8lkUj38crlaCI\nX/UWIBT/UqA+ThhxszR5JQcDf9HFw/1fzPv1+KZ0ubcF2+6xvzmDli5SG/RgsSNl\nqOUARii70YBzk7213+61ZVsHPzHaTCQTF4u+Ey9H6hHHioSUUdZKQ7solZGGiWQh\ng4nC+bu09zdHOfeFbpH6U1sSewKBgQC7xhqmIihgwcUhPrSxojgI3pusDx6iC8Ry\nC12zsrg+a91rYPBqNRzF6W4MLFWt5EtDTppBt8cv3+57fBiGyK3z7T0j8Sh+dZvE\nT4QdMDUJSceGhnupx6JVAuSrdOfgpW3rXFZLm/dWWc1bu2gBLEYsLceitoNJWOi0\n3c/9V9EyUQKBgGUDlZoNV3DQYVS4HWs0ep9yFKiyIfuhCj+YHN2POAkCuytp3cqp\naKsS0+AE7f0mUkJRIq/DaLLw1LdXxY5e8eHv9OGx0ft7mm0CdIPJfHyv+3LP+x9l\nPyiaeDLtIUmLioFDg6T7Jp5NOD1h0OCmV/ybFzYRYHvvb+x30LSuxR5XAoGAYlRQ\nOjVi7aAq6cjbeLXZIBPqc0SLpxIAcjQvgl2Ri+aSUZu26fccNSuTHD7PMzt8iieM\nMePaI+DhErseYN6P8U+Hl92+ddKCml+FcH+BFncTTAf6lCLdiCT2uC6FCqe2kuyM\nqBVphUeLeYD+6rZTnOjwRO3MfElZuvT46NLm0rECgYBKggoMPJ9kwuPlHlhsDFZB\nNXes2QaOs81kE/bHT1xGgF0deHM18R4TWh+7YbzBSS7LxnOTHcHbOAdcAXoWlay4\nTfFq3NUtz6ugQyhRJyyy1BGK9duyfAXCd0W4uTNqPaXClVV2m61nbuPHkiPANPN1\nUqy5QTcEWBTwcXVjslOB5Q==\n-----END PRIVATE KEY-----\n","client_email":"lumentech-monitor@lumentech-dados.iam.gserviceaccount.com","client_id":"104166231122931891600","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/lumentech-monitor%40lumentech-dados.iam.gserviceaccount.com","universe_domain":"googleapis.com"}
+      - SHEETS_AUTH_TOKEN=/TQUWaCwWsN34Tn3oNe2Tqb6J/G7NfpTnHFWNjcETEdYJexzCqZOUOtYH4VwbS2l
+      - MIX_ENV=prod
+      - PORT=4000
+      - PHX_HOST=syslumen.aled1.com
     networks:
       - network_public
     deploy:
@@ -43,7 +50,6 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
-        # PRIORITY 100 = Backend wins for /socket and /api paths
         - "traefik.http.routers.syslumen-back.rule=Host(`syslumen.aled1.com`) && (PathPrefix(`/socket`) || PathPrefix(`/api`))"
         - "traefik.http.routers.syslumen-back.entrypoints=websecure"
         - "traefik.http.routers.syslumen-back.tls=true"
