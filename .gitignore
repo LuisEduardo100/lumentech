@@ -24,6 +24,7 @@ backend/doc/
 # Google Credentials (Backend)
 backend/lumentech-dados-*.json
 backend/credentials.json
+google_credentials.json
 
 # Frontend (Node/React)
 frontend/node_modules/
