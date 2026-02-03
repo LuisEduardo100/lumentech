@@ -57,16 +57,16 @@ defmodule LumentechMonitor.Data.DealStore do
   @impl true
   @impl true
   def handle_info(:initial_fetch, state) do
+    Logger.info("DealStore: Attempting initial fetch...")
+
     case @provider.fetch_all_deals() do
       {:ok, rows} ->
-        Logger.info("DealStore: Data loaded. #{length(rows)} deals.")
+        Logger.info("DealStore: Fetch successful. Loaded #{length(rows)} rows.")
         broadcast_update(rows)
         {:noreply, %{state | rows: rows, last_updated: DateTime.utc_now()}}
 
       {:error, reason} ->
-        Logger.warn(
-          "DealStore: Failed to fetch initial data: #{inspect(reason)}. Retrying in 60s..."
-        )
+        Logger.error("DealStore: FAILED to fetch initial data: #{inspect(reason)}")
 
         # Retry with backoff (60s) to handle 429 Quota Limits
         Process.send_after(self(), :initial_fetch, 60_000)
