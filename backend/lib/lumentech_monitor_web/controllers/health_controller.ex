@@ -3,7 +3,10 @@ defmodule LumentechMonitorWeb.HealthController do
   alias LumentechMonitor.Data.DealStore
 
   def deals(conn, _params) do
+    require Logger
+    Logger.info("HealthController: Received request. PID: #{inspect(self())}")
     state = DealStore.get_all_deals()
+    Logger.info("HealthController: Got state with #{length(state.rows)} rows from DealStore")
 
     # Simple JSON debug response
     json(conn, %{
