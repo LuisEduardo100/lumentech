@@ -3,12 +3,18 @@ FROM node:18-alpine as builder
 
 WORKDIR /app
 
+# Install dependencies (cached if package.json/lock changes)
 COPY package*.json ./
 RUN npm ci
 
+# Copy source code
 COPY . .
+
+# Build args for Environment Variables
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+
+# Build the app
 RUN npm run build
 
 # Stage 2: Serve with Nginx
@@ -23,6 +29,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Expose port 80
 EXPOSE 80
 
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

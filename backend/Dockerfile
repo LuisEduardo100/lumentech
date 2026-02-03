@@ -1,19 +1,7 @@
-# Find eligible builder and runner images on Docker Hub. We use Ubuntu/Debian instead of Alpine to avoid DNS resolution issues in production.
-#
-# https://hub.docker.com/r/hexpm/elixir/tags?page=1&name=ubuntu
-# https://hub.docker.com/_/ubuntu?tab=tags
-#
-#
-# This file is based on these images:
-#
-#   - https://hub.docker.com/r/hexpm/elixir/tags - for the build image
-#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20210902-slim - for the release image
-#   - https://pkgs.org/ - resource for finding needed packages
-#   - Ex: hexpm/elixir:1.14.0-erlang-25.0-debian-bullseye-20210902-slim
-#
+# Builder Stage
 ARG ELIXIR_VERSION=1.14.4
 ARG OTP_VERSION=25.0
-ARG DEBIAN_VERSION=bullseye-20210902-slim
+ARG DEBIAN_VERSION=bullseye-20230612-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
@@ -24,7 +12,6 @@ FROM ${BUILDER_IMAGE} as builder
 RUN apt-get update -y && apt-get install -y build-essential git \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
-# prepare build dir
 WORKDIR /app
 
 # install hex + rebar
@@ -41,26 +28,21 @@ RUN mix deps.compile
 
 # compile config
 COPY config/config.exs config/
-COPY config/prod.exs config/
 COPY config/runtime.exs config/
 
 # compile release
 COPY lib lib
-# COPY priv priv # If you had priv/static or similar, uncomment this
 
+# Compile the project
 RUN mix compile
 
-# Changes to config/runtime.exs don't require recompiling the code
-# COPY config/runtime.exs config/
-
-# COPY rel rel
+# Create the release
 RUN mix release
 
-# start a new build stage so that the final image will only contain
-# the compiled release and other runtime necessities
+# Runner Stage
 FROM ${RUNNER_IMAGE}
 
-RUN apt-get update -y && apt-get install -y libstdc++6 openssl libncurses5 locales \
+RUN apt-get update -y && apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
@@ -75,6 +57,8 @@ RUN chown nobody /app
 
 # set runner ENV
 ENV MIX_ENV="prod"
+# CRITICAL: This enables the server startup in runtime.exs
+ENV PHX_SERVER="true"
 
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/prod/rel/lumentech_monitor ./
