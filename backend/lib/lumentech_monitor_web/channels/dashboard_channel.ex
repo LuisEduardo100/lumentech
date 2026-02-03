@@ -4,17 +4,9 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   alias LumentechMonitor.DataIngestion.SheetClient
 
   def join("dashboard:main", _payload, socket) do
-    # Busca a lista crua de negócios
-    deals = DealStore.get_all_deals()
-
-    # Cria o objeto (Map) que o Frontend espera
-    response_payload = %{
-      rows: deals,
-      last_updated: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    # Envia o objeto estruturado
-    {:ok, response_payload, socket}
+    # Send the current state immediately upon joining
+    current_data = DealStore.get_all_deals()
+    {:ok, current_data, socket}
   end
 
   # We can also handle incoming messages if needed, but this is mostly read-only for the client
