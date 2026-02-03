@@ -41,7 +41,9 @@ json_content =
       nil
 
     String.starts_with?(creds_source, "{") ->
+      # Robustness: Escape actual newlines in the string (e.g. from private key) to ensure valid JSON
       creds_source
+      |> String.replace("\n", "\\n")
 
     File.exists?(creds_source) ->
       File.read!(creds_source)
