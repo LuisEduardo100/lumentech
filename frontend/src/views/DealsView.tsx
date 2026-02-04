@@ -151,6 +151,15 @@ export function DealsView({ rows, onUpdateStatus, onOpenCreateModal, onEditRow, 
                                 <th onClick={() => requestSort('produto')} className={tableHeaderClass}>
                                     Produto {sortConfig?.key === 'produto' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </th>
+                                <th onClick={() => requestSort('origem')} className={tableHeaderClass}>
+                                    Origem {sortConfig?.key === 'origem' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th onClick={() => requestSort('cidade')} className={tableHeaderClass}>
+                                    Cidade {sortConfig?.key === 'cidade' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
+                                <th onClick={() => requestSort('estado')} className={tableHeaderClass}>
+                                    UF {sortConfig?.key === 'estado' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </th>
                                 <th onClick={() => requestSort('valor')} className={tableHeaderClass}>
                                     Valor {sortConfig?.key === 'valor' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </th>
@@ -168,6 +177,9 @@ export function DealsView({ rows, onUpdateStatus, onOpenCreateModal, onEditRow, 
                                     <td className={`${tableCellClass} font-semibold`}>{row.cliente}</td>
                                     <td className={tableCellClass}>{row.categoria}</td>
                                     <td className={tableCellClass} title={row.produto || ''}>{(row.produto || '').length > 30 ? (row.produto || '').substring(0, 30) + '...' : (row.produto || '')}</td>
+                                    <td className={tableCellClass}>{row.origem}</td>
+                                    <td className={tableCellClass}>{row.cidade}</td>
+                                    <td className={tableCellClass}>{row.estado}</td>
                                     <td className={tableCellClass}>{formatCurrency(row.valor)}</td>
                                     <td className={tableCellClass}>
                                         <span className={`px-2 py-0.5 rounded text-xs font-bold border ${getStatusColor(row.status)}`}>

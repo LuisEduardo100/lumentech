@@ -169,6 +169,58 @@ defmodule LumentechMonitor.DataIngestion.SheetClient do
     end
   end
 
+  def update_status(id, status) do
+    spreadsheet_id = Application.get_env(:lumentech_monitor, :data_ingestion)[:spreadsheet_id]
+    if is_nil(spreadsheet_id), do: {:error, :spreadsheet_id_missing}
+
+    case fetch_raw_values() do
+      {:ok, rows} ->
+        index =
+          Enum.find_index(rows, fn r ->
+            row_id = Enum.at(r, 0) |> to_string() |> String.trim()
+            target_id = to_string(id) |> String.trim()
+            row_id == target_id
+          end)
+
+        if index do
+          # Row index is 1-based (and usually header is 1).
+          # Raw values start from A2 (index 0). So Sheet Row = index + 2.
+          sheet_row_number = index + 2
+          # Status is Column H (8th letter).
+          range = "H#{sheet_row_number}:H#{sheet_row_number}"
+
+          url =
+            "https://sheets.googleapis.com/v4/spreadsheets/#{spreadsheet_id}/values/#{range}?valueInputOption=USER_ENTERED"
+
+          body = %{"values" => [[status]]}
+
+          case get_auth_header() do
+            {:ok, auth_header} ->
+              Finch.build(
+                :put,
+                url,
+                [auth_header, {"Content-Type", "application/json"}],
+                Jason.encode!(body)
+              )
+              |> Finch.request(LumentechMonitor.Finch)
+              |> case do
+                {:ok, %Finch.Response{status: 200}} -> {:ok, :updated}
+                {:ok, resp} -> {:error, "Update Status Failed: #{inspect(resp.body)}"}
+                {:error, reason} -> {:error, reason}
+              end
+
+            error ->
+              error
+          end
+        else
+          {:error, :not_found}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   def delete_row(id) do
     spreadsheet_id = Application.get_env(:lumentech_monitor, :data_ingestion)[:spreadsheet_id]
     if is_nil(spreadsheet_id), do: {:error, :spreadsheet_id_missing}

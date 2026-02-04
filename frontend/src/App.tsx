@@ -72,16 +72,19 @@ function App() {
         // orderData is { row: [...] }
         const r = orderData.row;
         // Optimistic Update
-        const safePedido = String(orderData.row[0] || '').trim();
-        const safeProduto = String(orderData.row[5] || '').trim();
-        const compositeId = safeProduto ? `${safePedido}-${safeProduto}` : safePedido;
+        const safePedido = String(r[1] || '').trim();
+        const safeProduto = String(r[6] || '').trim();
+        const uniqueId = r[0] ? String(r[0]) : null;
+
+        // Use Unique ID if available, else Composite (fallback)
+        const compositeId = uniqueId || (safeProduto ? `${safePedido}-${safeProduto}` : safePedido);
 
         const newRow = {
             id: compositeId,
             pedido_original: safePedido,
-            data_emissao: r[1], cliente: r[2], categoria: r[3], origem: r[4],
-            produto: r[5], valor: parseFloat(r[6].replace(/\./g, '').replace(',', '.')),
-            status: r[7], data_fechamento: r[8], cidade: r[9], estado: r[10], profissional: "N/A"
+            data_emissao: r[2], cliente: r[3], categoria: r[4], origem: r[5],
+            produto: r[6], valor: parseFloat(r[7].replace(/\./g, '').replace(',', '.')),
+            status: r[8], data_fechamento: r[9], cidade: r[10], estado: r[11], profissional: "N/A"
         };
 
         manualUpdate(prev => ({ ...prev, rows: [...prev.rows, newRow] }));
@@ -245,9 +248,9 @@ function App() {
                         <div className="grid grid-cols-2 gap-6 shrink-0 h-48">
                             <KPICard
                                 title="VOLUME FECHADO"
-                                value={kpiMetrics.volumeFechado.total}
+                                value={kpiMetrics.volumeFechado.month}
                                 todayValue={kpiMetrics.volumeFechado.today}
-                                monthValue={kpiMetrics.volumeFechado.month}
+                                // monthValue removed as requested
                                 // percent removed
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
@@ -255,10 +258,10 @@ function App() {
                             />
                             <KPICard
                                 title="VOLUME ORÇADO"
-                                value={kpiMetrics.volumeOrcado.total}
+                                value={kpiMetrics.volumeOrcado.month}
                                 todayValue={kpiMetrics.volumeOrcado.today}
-                                monthValue={kpiMetrics.volumeOrcado.month}
-                                percent={kpiMetrics.volumeOrcado.total > 0 ? Math.round((kpiMetrics.volumeFechado.total / kpiMetrics.volumeOrcado.total) * 100) : 0}
+                                // monthValue removed
+                                percent={kpiMetrics.volumeOrcado.month > 0 ? Math.round((kpiMetrics.volumeFechado.month / kpiMetrics.volumeOrcado.month) * 100) : 0}
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
                                 isDark={isDark}

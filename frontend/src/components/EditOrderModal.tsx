@@ -14,6 +14,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark 
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         id: '',
+        pedido_original: '', // Add this
         data_emissao: '',
         cliente: '',
         categoria: '',
@@ -36,6 +37,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark 
 
             setFormData({
                 id: initialData.id,
+                pedido_original: initialData.pedido_original || '', // Initialize
                 data_emissao: initialData.data_emissao,
                 cliente: initialData.cliente,
                 categoria: initialData.categoria,
@@ -74,6 +76,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark 
             // map back to backend format
             const rowMap = {
                 id: formData.id,
+                pedido_original: formData.pedido_original,
                 data_emissao: formData.data_emissao,
                 cliente: formData.cliente,
                 categoria: formData.categoria,
@@ -104,7 +107,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark 
             <div className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
                 {/* Header */}
                 <div className={`px-6 py-4 flex justify-between items-center border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Editar Pedido #{initialData.id}</h2>
+                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Editar Pedido #{initialData.pedido_original || initialData.id}</h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100/10 text-slate-400 hover:text-red-500 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
@@ -114,7 +117,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, initialData, isDark 
                 <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Nº Pedido *</label>
-                        <input name="id" readOnly disabled value={formData.id} className={`${inputClass} opacity-50 cursor-not-allowed`} />
+                        <input name="pedido_original" readOnly disabled value={formData.pedido_original} className={`${inputClass} opacity-50 cursor-not-allowed`} />
                     </div>
                     <div>
                         <label className={labelClass}>Data Emissão *</label>

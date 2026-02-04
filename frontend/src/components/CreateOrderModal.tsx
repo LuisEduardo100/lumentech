@@ -73,8 +73,13 @@ export function CreateOrderModal({ isOpen, onClose, onSubmit, rows, isDark }: Cr
         setIsLoading(true);
         try {
             // Prepare payload matching A-K
+            // Let Backend generate Sequential ID (Index 0)
+            const uniqueId = "PENDING"; // Validation placeholder
+
+            // Prepare payload matching A-L (Index 0-11) - Shifted Scheme
             const row = [
-                formData.id,
+                uniqueId, // Column A (0)
+                formData.id, // Column B (1) - Pedido
                 formData.data_emissao,
                 formData.cliente,
                 formData.categoria,

@@ -8,18 +8,14 @@ defmodule LumentechMonitorWeb.WebhookController do
   # Plug pipeline for authentication
   plug(:verify_token when action in [:handle_sheets_update])
 
-  def handle_sheets_update(conn, %{"event_type" => "row_update", "data" => data}) do
-    # Async dispatch
-    DealStore.update_deal_async(data)
+  def handle_sheets_update(conn, params) do
+    # Receive generic payload from Apps Script
+    # Expected: %{"event" => "edit"|"remove_row", "row_data" => ...}
+
+    DealStore.handle_webhook_event(params)
 
     conn
     |> send_resp(200, "Received")
-  end
-
-  def handle_sheets_update(conn, _params) do
-    # Handle unknown events or bad payload
-    conn
-    |> send_resp(400, "Bad Request: Invalid formatting")
   end
 
   # Private Plug Function

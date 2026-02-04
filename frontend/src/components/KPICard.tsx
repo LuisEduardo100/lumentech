@@ -64,11 +64,13 @@ export function KPICard({ title, value, todayValue = 0, monthValue = 0, percent,
                         <span className="font-bold text-lg">{formatCurrency(todayValue)}</span>
                         <ArrowUp className="w-4 h-4 text-green-500" />
                     </div>
-                    <div className={`flex items-center gap-2 ${valueColor}`}>
-                        <span className={`uppercase tracking-wide text-xs font-semibold opacity-70 ${subHeaderLabelColor}`}>No mês:</span>
-                        <span className="font-bold text-lg">{formatCurrency(monthValue)}</span>
-                        <ArrowUp className="w-4 h-4 text-green-500" />
-                    </div>
+                    {monthValue !== undefined && monthValue !== 0 && (
+                        <div className={`flex items-center gap-2 ${valueColor}`}>
+                            <span className={`uppercase tracking-wide text-xs font-semibold opacity-70 ${subHeaderLabelColor}`}>No mês:</span>
+                            <span className="font-bold text-lg">{formatCurrency(monthValue)}</span>
+                            <ArrowUp className="w-4 h-4 text-green-500" />
+                        </div>
+                    )}
                 </div>
 
                 {/* Progress Percent */}

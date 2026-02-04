@@ -17,3 +17,7 @@ config :logger, :console,
   metadata: [:request_id]
 
 config :phoenix, :json_library, Jason
+
+config :lumentech_monitor, :sheet_client, LumentechMonitor.DataIngestion.SheetClient
+config :lumentech_monitor, :data_provider, LumentechMonitor.Data.GoogleSheetsProvider
+config :lumentech_monitor, :sales_adapter, LumentechMonitor.Data.Adapters.GoogleSheets

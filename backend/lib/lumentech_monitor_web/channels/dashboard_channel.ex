@@ -1,7 +1,15 @@
 defmodule LumentechMonitorWeb.DashboardChannel do
   use Phoenix.Channel
   alias LumentechMonitor.Data.DealStore
-  alias LumentechMonitor.DataIngestion.SheetClient
+  # alias LumentechMonitor.DataIngestion.SheetClient
+
+  defp adapter do
+    Application.get_env(
+      :lumentech_monitor,
+      :sales_adapter,
+      LumentechMonitor.Data.Adapters.GoogleSheets
+    )
+  end
 
   def join("dashboard:main", _payload, socket) do
     require Logger
@@ -60,8 +68,10 @@ defmodule LumentechMonitorWeb.DashboardChannel do
     if DealStore.exists?(composite_id) do
       {:reply, {:error, "Pedido duplicado: #{composite_id} já existe."}, socket}
     else
-      case SheetClient.append_row(row) do
+      case adapter().append_deal(row) do
         {:ok, _} ->
+          # Force Sync to get the new Sequential ID
+          DealStore.force_refresh()
           {:reply, :ok, socket}
 
         {:error, reason} ->
@@ -71,8 +81,10 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   end
 
   def handle_in("update_status", %{"id" => id, "status" => status}, socket) do
-    case SheetClient.update_status(id, status) do
+    case adapter().update_status(id, status) do
       {:ok, _} ->
+        # Update Local Store
+        DealStore.update_status(id, status)
         {:reply, :ok, socket}
 
       {:error, reason} ->
@@ -81,8 +93,9 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   end
 
   def handle_in("update_row", %{"id" => id, "row" => row_map}, socket) do
-    case SheetClient.update_row(id, row_map) do
+    case adapter().update_row(id, row_map) do
       {:ok, _} ->
+        DealStore.force_refresh()
         {:reply, :ok, socket}
 
       {:error, reason} ->
@@ -91,10 +104,10 @@ defmodule LumentechMonitorWeb.DashboardChannel do
   end
 
   def handle_in("delete_row", %{"id" => id}, socket) do
-    case SheetClient.delete_row(id) do
+    case adapter().delete_deal(id) do
       {:ok, :deleted} ->
         # Write-through to cache to ensure immediate consistency
-        DealStore.delete_deal(id)
+        DealStore.force_refresh()
         {:reply, :ok, socket}
 
       {:error, reason} ->
