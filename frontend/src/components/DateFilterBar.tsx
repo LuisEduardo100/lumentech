@@ -215,6 +215,13 @@ export function DateFilterBar({ dateFilter, onDateFilterChange, isDark }: DateFi
                 isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'
             }`}>
                 <button
+                    onClick={() => handlePresetClick('mes_atual')}
+                    className={dateFilter.type === 'mes_atual' ? activePillClass : inactivePillClass}
+                >
+                    MÊS
+                </button>
+
+                <button
                     onClick={() => handlePresetClick('esta_semana')}
                     className={dateFilter.type === 'esta_semana' ? activePillClass : inactivePillClass}
                 >
