@@ -6,9 +6,11 @@ import { MapChart } from './components/charts/MapChart';
 import { Wifi, WifiOff, Moon, Sun, LayoutGrid, List } from 'lucide-react';
 import { CreateOrderModal } from './components/CreateOrderModal';
 import { DealsView } from './views/DealsView';
-import { SheetRow } from './lib/types';
+import { SheetRow, DateFilter } from './lib/types';
 import { EditOrderModal } from './components/EditOrderModal';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
+import { DateFilterBar } from './components/DateFilterBar';
+import { filterRowsByDate } from './lib/dateFilter';
 
 function App() {
     const { data, isConnected, push, manualUpdate } = useDashboardChannel();
@@ -19,6 +21,7 @@ function App() {
     const [category, setCategory] = useState<'Geral' | 'Orglight' | 'Perfil'>('Geral');
     const [selectedState, setSelectedState] = useState<string | null>(null);
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
+    const [dateFilter, setDateFilter] = useState<DateFilter>({ type: 'mes_atual' });
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // Edit/Delete State
@@ -41,16 +44,18 @@ function App() {
         return true;
     });
 
-    // filteredRows is for KPIs (affected by State selection)
+    // Date filter applies after category filter (per D-04, FILT-01)
+    const dateFilteredRows = filterRowsByDate(categoryRows, dateFilter);
+
+    // State (UF) filter stacks on top of date filter — independent, per RESEARCH.md anti-patterns
     const filteredRows = selectedState
-        ? categoryRows.filter(r => r.estado === selectedState)
-        : categoryRows;
+        ? dateFilteredRows.filter(r => r.estado === selectedState)
+        : dateFilteredRows;
 
-    // Calculate metrics twice:
-    // 1. For the Map (Should always show ALL states data for the current category, regardless of state selection)
-    const mapMetrics = calculateMetrics(categoryRows);
+    // Map uses date-filtered rows WITHOUT state filter (global date filter applies to map per RESEARCH.md Open Question 1)
+    const mapMetrics = calculateMetrics(dateFilteredRows);
 
-    // 2. For the KPIs (Should reflect the specific state if selected)
+    // KPIs use fully filtered rows (category + date + state)
     const kpiMetrics = calculateMetrics(filteredRows);
 
     // Theme Colors
@@ -201,6 +206,15 @@ function App() {
                                     PERFIL
                                 </button>
                             </div>
+                        )}
+
+                        {/* Date Filter (Only in Dashboard) - per D-02 */}
+                        {view === 'dashboard' && (
+                            <DateFilterBar
+                                dateFilter={dateFilter}
+                                onDateFilterChange={setDateFilter}
+                                isDark={isDark}
+                            />
                         )}
                     </div>
                 </div>
