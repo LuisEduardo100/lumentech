@@ -208,14 +208,12 @@ function App() {
                             </div>
                         )}
 
-                        {/* Date Filter (Only in Dashboard) - per D-02 */}
-                        {view === 'dashboard' && (
-                            <DateFilterBar
-                                dateFilter={dateFilter}
-                                onDateFilterChange={setDateFilter}
-                                isDark={isDark}
-                            />
-                        )}
+                        {/* Date Filter (visible on all views) */}
+                        <DateFilterBar
+                            dateFilter={dateFilter}
+                            onDateFilterChange={setDateFilter}
+                            isDark={isDark}
+                        />
                     </div>
                 </div>
 
@@ -262,20 +260,17 @@ function App() {
                         <div className="grid grid-cols-2 gap-6 shrink-0 h-48">
                             <KPICard
                                 title="VOLUME FECHADO"
-                                value={kpiMetrics.volumeFechado.month}
+                                value={kpiMetrics.volumeFechado.total}
                                 todayValue={kpiMetrics.volumeFechado.today}
-                                // monthValue removed as requested
-                                // percent removed
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
                                 isDark={isDark}
                             />
                             <KPICard
                                 title="VOLUME ORÇADO"
-                                value={kpiMetrics.volumeOrcado.month}
+                                value={kpiMetrics.volumeOrcado.total}
                                 todayValue={kpiMetrics.volumeOrcado.today}
-                                // monthValue removed
-                                percent={kpiMetrics.volumeOrcado.month > 0 ? Math.round((kpiMetrics.volumeFechado.month / kpiMetrics.volumeOrcado.month) * 100) : 0}
+                                percent={kpiMetrics.volumeOrcado.total > 0 ? Math.round((kpiMetrics.volumeFechado.total / kpiMetrics.volumeOrcado.total) * 100) : 0}
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
                                 isDark={isDark}
