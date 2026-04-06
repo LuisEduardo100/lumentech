@@ -28,7 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Consultant can select "Esta semana" and all card values recalculate
   4. Consultant can select "Mês passado" and all card values recalculate
   5. Consultant can open a date range picker, select a custom start and end date, and all cards update
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Test infrastructure + DateFilter types + filterRowsByDate logic (TDD)
+- [ ] 01-02-PLAN.md — DateFilterBar UI component + App.tsx wiring + visual verification
+
 **UI hint**: yes
 
 ### Phase 2: Annual KPI Cards
@@ -61,6 +66,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Date Filter System | 0/? | Not started | - |
+| 1. Date Filter System | 0/2 | Planning complete | - |
 | 2. Annual KPI Cards | 0/? | Not started | - |
 | 3. Percentage Comparisons and Layout Polish | 0/? | Not started | - |
