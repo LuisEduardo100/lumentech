@@ -297,7 +297,7 @@ function App() {
                     </>
                 ) : (
                     <DealsView
-                        rows={data.rows}
+                        rows={dateFilteredRows}
                         onUpdateStatus={handleUpdateStatus}
                         onOpenCreateModal={() => setIsCreateModalOpen(true)}
                         onEditRow={(row) => { setEditingRow(row); setIsEditModalOpen(true); }}
