@@ -56,25 +56,25 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KPI-01 | Pending | Pending |
-| KPI-02 | Pending | Pending |
-| KPI-03 | Pending | Pending |
-| FILT-01 | Pending | Pending |
-| FILT-02 | Pending | Pending |
-| FILT-03 | Pending | Pending |
-| FILT-04 | Pending | Pending |
-| FILT-05 | Pending | Pending |
-| COMP-01 | Pending | Pending |
-| COMP-02 | Pending | Pending |
-| COMP-03 | Pending | Pending |
-| LAYOUT-01 | Pending | Pending |
-| LAYOUT-02 | Pending | Pending |
+| KPI-01 | Phase 2 | Pending |
+| KPI-02 | Phase 2 | Pending |
+| KPI-03 | Phase 2 | Pending |
+| FILT-01 | Phase 1 | Pending |
+| FILT-02 | Phase 1 | Pending |
+| FILT-03 | Phase 1 | Pending |
+| FILT-04 | Phase 1 | Pending |
+| FILT-05 | Phase 1 | Pending |
+| COMP-01 | Phase 3 | Pending |
+| COMP-02 | Phase 3 | Pending |
+| COMP-03 | Phase 3 | Pending |
+| LAYOUT-01 | Phase 3 | Pending |
+| LAYOUT-02 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 (will be mapped during roadmap creation)
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-06*
-*Last updated: 2026-04-06 after initial definition*
+*Last updated: 2026-04-06 — traceability mapped to 3 phases*
