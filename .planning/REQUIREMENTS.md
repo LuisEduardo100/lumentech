@@ -15,11 +15,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Filtros de Data
 
-- [ ] **FILT-01**: Dashboard possui filtro global de data que afeta todos os cards
-- [ ] **FILT-02**: Filtro predefinido "Esta semana" disponível
-- [ ] **FILT-03**: Filtro predefinido "Mês atual" disponível (padrão)
-- [ ] **FILT-04**: Filtro predefinido "Mês passado" disponível
-- [ ] **FILT-05**: Filtro de período customizado com date range picker
+- [x] **FILT-01**: Dashboard possui filtro global de data que afeta todos os cards
+- [x] **FILT-02**: Filtro predefinido "Esta semana" disponível
+- [x] **FILT-03**: Filtro predefinido "Mês atual" disponível (padrão)
+- [x] **FILT-04**: Filtro predefinido "Mês passado" disponível
+- [x] **FILT-05**: Filtro de período customizado com date range picker
 
 ### Comparação Percentual
 
@@ -59,11 +59,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | KPI-01 | Phase 2 | Pending |
 | KPI-02 | Phase 2 | Pending |
 | KPI-03 | Phase 2 | Pending |
-| FILT-01 | Phase 1 | Pending |
-| FILT-02 | Phase 1 | Pending |
-| FILT-03 | Phase 1 | Pending |
-| FILT-04 | Phase 1 | Pending |
-| FILT-05 | Phase 1 | Pending |
+| FILT-01 | Phase 1 | Complete |
+| FILT-02 | Phase 1 | Complete |
+| FILT-03 | Phase 1 | Complete |
+| FILT-04 | Phase 1 | Complete |
+| FILT-05 | Phase 1 | Complete |
 | COMP-01 | Phase 3 | Pending |
 | COMP-02 | Phase 3 | Pending |
 | COMP-03 | Phase 3 | Pending |

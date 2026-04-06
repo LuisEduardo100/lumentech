@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Test infrastructure + DateFilter types + filterRowsByDate logic (TDD)
+- [x] 01-01-PLAN.md — Test infrastructure + DateFilter types + filterRowsByDate logic (TDD)
 - [ ] 01-02-PLAN.md — DateFilterBar UI component + App.tsx wiring + visual verification
 
 **UI hint**: yes
@@ -66,6 +66,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Date Filter System | 0/2 | Planning complete | - |
+| 1. Date Filter System | 1/2 | In Progress|  |
 | 2. Annual KPI Cards | 0/? | Not started | - |
 | 3. Percentage Comparisons and Layout Polish | 0/? | Not started | - |
