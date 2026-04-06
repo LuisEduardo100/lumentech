@@ -1,19 +1,18 @@
 import { SheetRow, DashboardMetrics } from './types';
 import { isSameDay, isSameMonth, parseISO } from 'date-fns';
 
+export function parseBrDate(dateStr: string | null): Date {
+    if (!dateStr) return new Date(0); // Return epoch if null
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        // new Date(year, monthIndex, day)
+        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+    return parseISO(dateStr); // Fallback
+}
+
 export function calculateMetrics(rows: SheetRow[]): DashboardMetrics {
     const now = new Date();
-
-    // Helper to parse DD/MM/YYYY
-    const parseBrDate = (dateStr: string | null) => {
-        if (!dateStr) return new Date(0); // Return epoch if null
-        const parts = dateStr.split('/');
-        if (parts.length === 3) {
-            // new Date(year, monthIndex, day)
-            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        }
-        return parseISO(dateStr); // Fallback
-    };
 
     // Normalize Status
     const isGanho = (s: string) => s?.toUpperCase() === "GANHO";
