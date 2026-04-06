@@ -21,7 +21,7 @@ created: 2026-04-06
 | Preset | not applicable |
 | Component library | none (all components hand-built with Tailwind) |
 | Icon library | lucide-react 0.292.0 |
-| Font | TT Hoves Pro Trial (400 regular, 700 bold, 900 black) — loaded via @font-face in index.css; fallback: Inter, system-ui, sans-serif |
+| Font | TT Hoves Pro Trial (400 regular, 700 bold) — loaded via @font-face in index.css; fallback: Inter, system-ui, sans-serif |
 
 Source: `frontend/tailwind.config.js`, `frontend/src/index.css`
 
@@ -42,9 +42,12 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | Not used in this phase |
 
 Exceptions:
-- Filter pill group container uses `p-1` (4px) internal padding — matches existing category tab group exactly (source: App.tsx line 184)
-- Filter pill vertical padding: `py-1.5` (6px) — matches existing pill buttons; intentional non-4pt exception carried over from existing pattern
-- State filter indicator uses `px-3 py-1` — matches existing chip pattern (App.tsx lines 212-217)
+
+| Exception | Value | Category | Rationale |
+|-----------|-------|----------|-----------|
+| Filter pill group container: `p-1` | 4px | on-grid | Matches existing category tab group exactly (source: App.tsx line 184) |
+| Filter pill vertical padding: `py-1.5` | 6px | inherited — cannot change | This 6px value exists in the current category tab pills. Changing it would break visual consistency with the existing category tabs that DateFilterBar mirrors. Not a new design choice introduced by this phase. Source: App.tsx lines 184-204 |
+| State filter indicator: `px-3 py-1` | 12px / 4px | on-grid | Matches existing chip pattern (App.tsx lines 212-217) |
 
 Source: App.tsx category tab group lines 184-204; `gap-4` between groups line 163
 
@@ -52,16 +55,19 @@ Source: App.tsx category tab group lines 184-204; `gap-4` between groups line 16
 
 ## Typography
 
+This phase declares exactly 2 font weights: **400 (regular)** and **700 (bold)**.
+
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px (`text-sm`) | 400 (regular) | 1.5 | Popover labels, date input labels, pill labels |
 | Label | 12px (`text-xs`) | 700 (bold) | 1.4 | Pill button text (uppercase, `tracking-wide`), filter indicator text |
 | Heading | 18px (`text-lg`) | 700 (bold) | 1.2 | Section headings inside dashboard |
-| Display | 48px (`text-5xl`) | 900 (black) | 1.0 (`leading-none`) | KPI card primary values (not changed in this phase) |
+
+> **Note — Display size not introduced by this phase:** KPICard.tsx uses 48px / weight 900 (black) for primary KPI values. This is existing legacy code. This phase does not modify KPICard.tsx and does not introduce weight 900. Executor must not add weight 900 to any new component.
 
 All text: font-family `TT Hoves`, `Inter`, system-ui, sans-serif.
 
-Source: KPICard.tsx line 54 (display), App.tsx line 187 (`text-xs sm:text-sm font-bold`), App.tsx line 274 (`text-lg font-bold uppercase tracking-widest`)
+Source: App.tsx line 187 (`text-xs sm:text-sm font-bold`), App.tsx line 274 (`text-lg font-bold uppercase tracking-widest`), KPICard.tsx line 54 (display — legacy, not this phase)
 
 ---
 
@@ -98,6 +104,8 @@ Source: App.tsx lines 187, 193, 212; KPICard.tsx lines 18-21, 50; tailwind.confi
 ---
 
 ## Component Inventory
+
+**Primary visual anchor:** The DateFilterBar pill group in the header draws the eye first via contrast against the header background and the active pill highlight (`bg-slate-600 text-white` shadow). It is the first interactive affordance a consultant sees when opening the dashboard.
 
 ### DateFilterBar (new component: `frontend/src/components/DateFilterBar.tsx`)
 
