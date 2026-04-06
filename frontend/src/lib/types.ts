@@ -19,6 +19,14 @@ export interface SheetData {
     last_updated: string | null;
 }
 
+export type DateFilterType = 'esta_semana' | 'mes_atual' | 'mes_passado' | 'personalizado';
+
+export interface DateFilter {
+  type: DateFilterType;
+  customStart?: Date;
+  customEnd?: Date;
+}
+
 export interface DashboardMetrics {
     volumeFechado: {
         total: number;
