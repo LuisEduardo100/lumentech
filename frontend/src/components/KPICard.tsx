@@ -13,6 +13,8 @@ interface KPICardProps {
     className?: string;
     isActive?: boolean;
     isDark?: boolean;
+    count?: number;
+    ticketMedio?: number;
 }
 
 const themeColors: Record<Theme, { accent: string, bg: string, text: string }> = {
@@ -21,7 +23,7 @@ const themeColors: Record<Theme, { accent: string, bg: string, text: string }> =
     slate: { accent: 'bg-slate-600', bg: 'bg-slate-100', text: 'text-slate-900' }
 };
 
-export function KPICard({ title, value, todayValue = 0, monthValue = 0, percent, theme, className, isActive, isDark }: KPICardProps) {
+export function KPICard({ title, value, todayValue = 0, monthValue = 0, percent, theme, className, isActive, isDark, count, ticketMedio }: KPICardProps) {
     const isOrange = theme === 'orange';
 
     // Theme configuration
@@ -69,6 +71,18 @@ export function KPICard({ title, value, todayValue = 0, monthValue = 0, percent,
                             <span className={`uppercase tracking-wide text-xs font-semibold opacity-70 ${subHeaderLabelColor}`}>No mês:</span>
                             <span className="font-bold text-lg">{formatCurrency(monthValue)}</span>
                             <ArrowUp className="w-4 h-4 text-green-500" />
+                        </div>
+                    )}
+                    {count !== undefined && (
+                        <div className={`flex items-center gap-2 flex-wrap ${valueColor}`}>
+                            <span className={`uppercase tracking-wide text-xs font-semibold opacity-70 ${subHeaderLabelColor}`}>Negócios:</span>
+                            <span className="font-bold text-lg">{count}</span>
+                            {ticketMedio !== undefined && (
+                                <>
+                                    <span className={`uppercase tracking-wide text-xs font-semibold opacity-70 ml-2 ${subHeaderLabelColor}`}>Ticket médio:</span>
+                                    <span className="font-bold text-lg">{formatCurrency(ticketMedio)}</span>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

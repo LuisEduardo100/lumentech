@@ -265,6 +265,8 @@ function App() {
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
                                 isDark={isDark}
+                                count={kpiMetrics.volumeFechado.count}
+                                ticketMedio={kpiMetrics.volumeFechado.ticketMedio}
                             />
                             <KPICard
                                 title="VOLUME ORÇADO"
@@ -274,6 +276,8 @@ function App() {
                                 theme={cardTheme}
                                 className="h-full shadow-xl"
                                 isDark={isDark}
+                                count={kpiMetrics.volumeOrcado.count}
+                                ticketMedio={kpiMetrics.volumeOrcado.ticketMedio}
                             />
                         </div>
 
