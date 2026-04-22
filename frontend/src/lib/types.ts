@@ -32,11 +32,15 @@ export interface DashboardMetrics {
         total: number;
         today: number;
         month: number;
+        count: number;
+        ticketMedio: number;
     };
     volumeOrcado: {
         total: number;
         today: number;
         month: number;
+        count: number;
+        ticketMedio: number;
     };
     // Generic (optional or deprecated)
     topStates?: { name: string; value: number }[];

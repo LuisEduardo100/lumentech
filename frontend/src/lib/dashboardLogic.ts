@@ -21,19 +21,25 @@ export function calculateMetrics(rows: SheetRow[]): DashboardMetrics {
     // Volume Fechado: Status == "Ganho"
     const fechadoRows = rows.filter(r => isGanho(r.status) && r.data_fechamento);
 
+    const fechadoTotal = sum(fechadoRows);
     const volumeFechado = {
-        total: sum(fechadoRows),
+        total: fechadoTotal,
         today: trySum(fechadoRows, r => isSameDay(parseBrDate(r.data_fechamento), now)),
-        month: trySum(fechadoRows, r => isSameMonth(parseBrDate(r.data_fechamento), now))
+        month: trySum(fechadoRows, r => isSameMonth(parseBrDate(r.data_fechamento), now)),
+        count: fechadoRows.length,
+        ticketMedio: fechadoRows.length > 0 ? fechadoTotal / fechadoRows.length : 0,
     };
 
     // Volume Orçado: Anything NOT "Ganho" and NOT "Perdido"
     const orcadoRows = rows.filter(r => !isGanho(r.status) && r.status?.toUpperCase() !== "PERDIDO");
 
+    const orcadoTotal = sum(orcadoRows);
     const volumeOrcado = {
-        total: sum(orcadoRows),
+        total: orcadoTotal,
         today: trySum(orcadoRows, r => isSameDay(parseBrDate(r.data_emissao), now)),
-        month: trySum(orcadoRows, r => isSameMonth(parseBrDate(r.data_emissao), now))
+        month: trySum(orcadoRows, r => isSameMonth(parseBrDate(r.data_emissao), now)),
+        count: orcadoRows.length,
+        ticketMedio: orcadoRows.length > 0 ? orcadoTotal / orcadoRows.length : 0,
     };
 
     // Groupings (aggregations)
