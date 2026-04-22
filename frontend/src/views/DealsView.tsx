@@ -13,6 +13,8 @@ interface DealsViewProps {
 
 export function DealsView({ rows, onUpdateStatus, onOpenCreateModal, onEditRow, onDeleteRow, isDark }: DealsViewProps) {
     const [searchTerm, setSearchTerm] = useState('');
+    type StatusFilter = 'TODOS' | 'GANHO' | 'EM ANDAMENTO' | 'PERDIDO';
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('TODOS');
     // Remove local editingId state for full edit (handled by parent modal)
     // Keep local editingId ONLY for quick status change if we want, OR remove it completely and use generic edit?
     // User requested "além de editar o status seja possível editar também os outros campos".
@@ -41,11 +43,15 @@ export function DealsView({ rows, onUpdateStatus, onOpenCreateModal, onEditRow, 
     const [sortConfig, setSortConfig] = useState<{ key: keyof SheetRow | string, direction: 'asc' | 'desc' } | null>(null);
 
     // Initial Filter
-    const filteredRows = rows.filter(r =>
-        (r.cliente?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (r.id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (r.categoria?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
+    const filteredRows = rows.filter(r => {
+        const matchesSearch =
+            (r.cliente?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (r.id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (r.categoria?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        if (!matchesSearch) return false;
+        if (statusFilter === 'TODOS') return true;
+        return (r.status || '').toUpperCase() === statusFilter;
+    });
 
     // Sorting Logic
     const sortedRows = React.useMemo(() => {
@@ -119,6 +125,32 @@ export function DealsView({ rows, onUpdateStatus, onOpenCreateModal, onEditRow, 
                             className={`bg-transparent outline-none w-full text-sm ${isDark ? 'text-white placeholder-slate-500' : 'text-slate-700 placeholder-slate-400'}`}
                         />
                     </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {([
+                        { key: 'TODOS' as const, label: 'Todos' },
+                        { key: 'GANHO' as const, label: 'Ganho' },
+                        { key: 'EM ANDAMENTO' as const, label: 'Em Andamento' },
+                        { key: 'PERDIDO' as const, label: 'Perdido' },
+                    ]).map(p => {
+                        const active = statusFilter === p.key;
+                        const activeClass = p.key === 'TODOS'
+                            ? (isDark ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-800 text-white border-slate-800')
+                            : getStatusColor(p.key);
+                        const inactiveClass = isDark
+                            ? 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                            : 'bg-white text-slate-500 border-slate-200 hover:text-slate-800';
+                        return (
+                            <button
+                                key={p.key}
+                                onClick={() => setStatusFilter(p.key)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${active ? activeClass : inactiveClass}`}
+                            >
+                                {p.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <button
