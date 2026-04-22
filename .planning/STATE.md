@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 Phase: 01 (date-filter-system) — EXECUTING
 Plan: 2 of 2
 Status: Phase complete — ready for verification
-Last activity: 2026-04-06
+Last activity: 2026-04-22 - Completed quick task 260422-hhr: Adicionar contagem de negócios + ticket médio nos cards KPI e filtros rápidos na tabela de Negócios
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -75,6 +75,12 @@ None yet.
 ### Blockers/Concerns
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260422-hhr | Adicionar contagem de negócios + ticket médio nos cards KPI (Fechado e Orçado) e filtros rápidos de status na tabela de Negócios | 2026-04-22 | a0ab7b8 | [260422-hhr-adicionar-contagem-de-neg-cios-ticket-m-](./quick/260422-hhr-adicionar-contagem-de-neg-cios-ticket-m-/) |
 
 ## Session Continuity
 
